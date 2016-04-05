@@ -16,6 +16,7 @@ Public Class DAO
     Private Const LayoutAfirmeInter As String = "sp_Reporte_LayoutNIKKO_AFIRME '@IdRazonSocial','@IdTipoNominaAsig','@IdTipoNominaProc','@Anio','@Periodo','@UID','@LID','@idAccion'"
     Private Const LayoutAfirmeNom As String = "sp_Reporte_LayoutAFIRME_Nom '@IdRazonSocial','@IdTipoNominaAsig','@IdTipoNominaProc','@Anio','@Periodo','@UID','@LID','@idAccion'"
     Private Const LayoutSANTANDER As String = "sp_Reporte_LayoutSANTANDER '@IdRazonSocial','@IdTipoNominaAsig','@IdTipoNominaProc','@Anio','@Periodo','@UID','@LID','@idAccion'"
+    Private Const LayoutBancomer As String = "sp_Reporte_LayoutDispersionBANCOMER_NETCASH108 '@IdRazonSocial','@IdTipoNominaAsig','@IdTipoNominaProc','@Anio','@Periodo','@UID','@LID','@idAccion'"
     Private Const LayoutHSBC As String = "sp_LayoutDispersionHSBC '@IdRazonSocial','@IdTipoNominaAsig','@IdTipoNominaProc','@Anio','@Periodo','@UID','@LID','@idAccion'"
 
 
@@ -214,6 +215,45 @@ Public Class DAO
 
                     Return sPathApp + sPathArchivosTemp + sFile
 
+                Case "LayoutBancomer"
+                    Dim results As ResultCollection
+                    Dim objLayoutDispersion As Entities.LayoutDispersion
+                    Dim dTotalImporte As Decimal
+                    Dim sCadena As String
+                    Dim i As Integer
+                    results = New ResultCollection
+                    ReportesProceso.tipoArchivo = 0
+                    objLayoutDispersion = New Entities.LayoutDispersion
+                    objLayoutDispersion.IdRazonSocial = context.Session("IdRazonSocial")
+                    objLayoutDispersion.UID = context.Session("UID")
+                    objLayoutDispersion.LID = context.Session("LID")
+                    objLayoutDispersion.idAccion = context.Items.Item("idAccion")
+                    Dim UserId As String
+                    UserId = ReportesProceso.UID.ToString
+                    UserId = UserId.Replace("/", "")
+                    UserId = UserId.Replace("\", "")
+                    UserId = UserId.Replace("%", "")
+                    UserId = UserId.Replace("_", "")
+                    UserId = UserId.Replace("-", "")
+                    sFile = "\LayoutBancomer" + ReportesProceso.IdRazonSocial.ToString + UserId + Date.Now.Second.ToString + ".txt"
+
+                    results.getEntitiesFromDataReader(objLayoutDispersion, Me.ReporteDispersionBancomer(ReportesProceso))
+                    dTotalImporte = 0
+                    If results.Count > 0 Then
+                        Dim sb As New FileStream(context.Server.MapPath(sPathApp + sPathArchivosTemp) + sFile, FileMode.Create)
+                        Dim sw As New StreamWriter(sb)
+
+                        For i = 0 To results.Count - 1
+                            sCadena = results(i).centroCosto
+                            sw.WriteLine(sCadena)
+                        Next i
+
+                        sw.Close()
+
+                    End If
+
+                    Return sPathApp + sPathArchivosTemp + sFile
+
 
             End Select
         Catch e As Exception
@@ -266,6 +306,19 @@ Public Class DAO
         Dim comandstr As String
         Try
             comandstr = LayoutAfirmeNom
+            resultado = Me.ExecuteQuery(comandstr, data, ReportesProceso)
+            Return data
+        Catch e As Exception
+        End Try
+        Return data
+    End Function
+
+    Public Function ReporteDispersionBancomer(ByVal ReportesProceso As EntitiesITX.ReportesProceso) As SqlDataReader
+        Dim data As SqlDataReader = Nothing
+        Dim resultado As Boolean
+        Dim comandstr As String
+        Try
+            comandstr = LayoutBancomer
             resultado = Me.ExecuteQuery(comandstr, data, ReportesProceso)
             Return data
         Catch e As Exception
